@@ -1,0 +1,85 @@
+# Alleaves Software Installation Script
+# This script downloads and installs required software from alleaves.com
+
+# Define your company's download URLs
+$baseUrl = "https://alleaves.com/resources/downloads/"
+$programs = @(
+    @{Name="NiceLabel 2019 PowerForms"; File="NiceLabel2019_PowerForms.exe"; Args="/S"},
+    @{Name="Zebra Scanner SDK"; File="Zebra_Scanner_SDK_(64bit)_v3.07.0001.exe"; Args="/S"},
+    @{Name="Zebra 123 Scan"; File="Zebra_123Scan_(64bit)_v6.00.0022.exe"; Args="/S"},
+    @{Name="POS for .NET"; File="PosForDotNet-1.14.1.msi"; Args="/quiet /norestart"},
+    @{Name="Alleaves Terminal App"; File="AlleavesTerminal.msi"; Args="/quiet /norestart"}
+)
+
+# Create temp directory
+$tempDir = "C:\temp\alleaves_install"
+New-Item -ItemType Directory -Path $tempDir -Force
+
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "Alleaves Software Installation Script" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Downloading and installing required software from alleaves.com..." -ForegroundColor Yellow
+Write-Host ""
+
+$successCount = 0
+$failedPrograms = @()
+
+foreach ($program in $programs) {
+    Write-Host "Processing $($program.Name)..." -ForegroundColor Cyan
+    
+    $downloadUrl = $baseUrl + $program.File
+    $localPath = Join-Path $tempDir $program.File
+    
+    try {
+        # Download file
+        Write-Host "  Downloading from: $downloadUrl" -ForegroundColor Gray
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $localPath -UseBasicParsing
+        
+        # Verify file was downloaded
+        if (Test-Path $localPath) {
+            Write-Host "  Download complete. File size: $([math]::Round((Get-Item $localPath).Length / 1MB, 2)) MB" -ForegroundColor Gray
+            
+            # Install
+            Write-Host "  Installing..." -ForegroundColor Gray
+            Start-Process -FilePath $localPath -ArgumentList $program.Args -Wait
+            
+            Write-Host "  ✓ $($program.Name) installed successfully" -ForegroundColor Green
+            $successCount++
+        }
+        else {
+            throw "Download failed - file not found"
+        }
+    }
+    catch {
+        Write-Host "  ✗ Failed to install $($program.Name): $($_.Exception.Message)" -ForegroundColor Red
+        $failedPrograms += $program.Name
+    }
+    
+    Write-Host ""
+}
+
+# Summary
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "Installation Summary" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "Successfully installed: $successCount out of $($programs.Count) programs" -ForegroundColor Yellow
+
+if ($failedPrograms.Count -gt 0) {
+    Write-Host "Failed installations:" -ForegroundColor Red
+    foreach ($failed in $failedPrograms) {
+        Write-Host "  - $failed" -ForegroundColor Red
+    }
+    Write-Host ""
+    Write-Host "Please install failed programs manually or contact Alleaves support." -ForegroundColor Yellow
+}
+
+# Cleanup
+Write-Host "Cleaning up temporary files..." -ForegroundColor Gray
+Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host ""
+Write-Host "Installation process complete!" -ForegroundColor Green
+Write-Host "Press any key to exit..." -ForegroundColor Yellow
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
