@@ -29,7 +29,7 @@ $failedPrograms = @()
 foreach ($program in $programs) {
     Write-Host "Processing $($program.Name)..." -ForegroundColor Cyan
     
-    $downloadUrl = $baseUrl + $program.File
+    $downloadUrl = $program.Url
     $localPath = Join-Path $tempDir $program.File
     
     try {
